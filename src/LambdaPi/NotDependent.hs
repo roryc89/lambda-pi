@@ -1,4 +1,4 @@
-module LambdaPi.Main where 
+module LambdaPi.NotDependent where 
 
 -- import Data.Text
 import Control.Monad (unless)

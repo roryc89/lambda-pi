@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 268939fe2dc01140e71bd4bd639c19634c7c4419f09000defd2eb8ab19e97b1d
+-- hash: a3b5e97d5c0d67c110b17a1493978919ff67cee36ba8c7d6107fda61739cbacd
 
 name:           lambda-pi
 version:        0.1.0.0
@@ -28,6 +28,7 @@ source-repository head
 library
   exposed-modules:
       LambdaPi.Main
+      LambdaPi.NotDependent
       Lib
   other-modules:
       Paths_lambda_pi
