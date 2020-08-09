@@ -11,6 +11,9 @@ data TermUp
     | Apply TermUp TermDown 
     deriving (Show, Eq)
 
+(@@) :: TermUp -> TermDown -> TermUp
+a @@ b = Apply a b
+
 -- | Term where type is an input to the checking algorithm (Checkable term)
 data TermDown 
     = Inf TermUp -- | Inferrable terms embedded in checkable terms
@@ -171,3 +174,28 @@ boundFree :: Int -> Name -> TermUp
 boundFree i n = case n of 
     Quote k -> Bound (i - k - 1)
     x -> Free x
+
+--------------------
+-- Prelude
+--------------------
+
+id_ = Lambda (Inf (Bound 0))
+
+const_ = Lambda $ Lambda $ Inf $ Bound 1
+
+tfree a = TFree $ Global a 
+
+free x = Inf $ Free $ Global x
+
+term1 = Ann id_ (Fun (tfree "a") (tfree "a")) `Apply` free "y"
+
+term2 = Ann const_
+    (Fun (Fun (tfree "b") (tfree "b"))
+    (Fun (tfree "a")
+    (Fun (tfree "b") (tfree "b"))))
+        @@ id_
+        @@ free "y"
+
+env1 = [(Global "y", HasType (tfree "a")), (Global "a", HasKind Star)]
+
+env2 = (Global "b", HasKind Star) : env1
