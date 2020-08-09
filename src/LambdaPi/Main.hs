@@ -138,7 +138,6 @@ typeDown i ctx termD suppliedType = case (termD, suppliedType) of
 
     tup -> throwError $ "type mismatch: " ++ show tup
 
-
 substUp :: Int -> TermUp -> TermUp -> TermUp 
 substUp i termU termUp_ = case termUp_ of 
     Ann termD t -> Ann (substDown i termU termD) t 
@@ -150,3 +149,25 @@ substDown :: Int -> TermUp -> TermDown -> TermDown
 substDown i termU termDown_ = case termDown_ of 
     Inf e -> Inf (substUp i termU e)
     Lambda e -> Lambda (substDown (i + 1) termU e)
+
+--------------------
+-- Quotation
+--------------------
+
+quote0 :: Value -> TermDown
+quote0 = quote 0 
+
+quote :: Int -> Value -> TermDown
+quote i val = case val of 
+    VLambda f -> Lambda (quote (i + 1) (f (vfree (Quote i))))
+    VNeutral n -> Inf (neutralQuote i n)
+
+neutralQuote :: Int -> Neutral -> TermUp 
+neutralQuote i n = case n of 
+    NFree x -> boundFree i x 
+    NApply n v -> neutralQuote i n `Apply` quote i v
+
+boundFree :: Int -> Name -> TermUp 
+boundFree i n = case n of 
+    Quote k -> Bound (i - k - 1)
+    x -> Free x
