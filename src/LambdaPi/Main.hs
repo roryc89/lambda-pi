@@ -1,11 +1,14 @@
+{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
+
 module LambdaPi.Main where 
 
--- import Data.Text
 import Control.Monad (unless)
 
 -- | Term with type produced by checking algorithm (Inferrable term)
 data TermUp
-    = Ann TermDown Type -- | Type annotation
+    = Ann TermDown TermDown -- | Type annotation
+    | Star -- | Kind (Type of Types)
+    | Pi TermDown TermDown
     | Bound Int -- | Local term, De Bruijn indices assigned
     | Free Name -- | Global with text name 
     | Apply TermUp TermDown 
@@ -26,13 +29,10 @@ data Name
     | Quote Int
     deriving (Show, Eq)
 
-data Type 
-    = TFree Name  -- | Type identifier
-    | Fun Type Type -- | Arrow Function
-    deriving (Show, Eq)
-
 data Value 
     = VLambda (Value -> Value) -- | Lambda abstraction
+    | VStar
+    | VPi Value (Value -> Value)
     | VNeutral Neutral
 
 -- | Neutral term, i.e. a variable applied to a (possibly empty) sequence of values
@@ -45,9 +45,9 @@ vfree n = VNeutral (NFree n)
 
 type Env = [Value]
 
---------------------
--- Evaluation 
---------------------
+-- --------------------
+-- -- Evaluation 
+-- --------------------
 
 evalUp :: TermUp -> Env -> Value 
 evalUp t env = case t of 
@@ -55,50 +55,38 @@ evalUp t env = case t of
     Free x -> vfree x
     Bound i -> env !! i
     Apply e1 e2 -> applyValue (evalUp e1 env) (evalDown e2 env)
+    Pi t1 t2 -> VPi (evalDown t1 env) (\x -> evalDown t2 (x : env))
+    Star -> VStar
 
 -- originally vapp 
+
 applyValue :: Value -> Value -> Value 
 applyValue v1 v2 = case v1 of 
     VLambda f -> f v2
     VNeutral n -> VNeutral (NApply n v2)
+    _ -> undefined 
+
 
 evalDown :: TermDown -> Env -> Value 
 evalDown t env = case t of 
     Inf i -> evalUp i env 
     Lambda e -> VLambda (\x -> evalDown e (x : env))
 
---------------------
--- Contexts 
---------------------
+-- --------------------
+-- -- Contexts 
+-- --------------------
 
-data Kind = Star 
-    deriving (Show)
+type Type = Value
 
-data Info 
-    = HasKind Kind
-    | HasType Type 
-    deriving (Show)
+type Context = [(Name, Type)]
 
-type Context = [(Name, Info)]
-
---------------------
--- Type Checking 
---------------------
+-- --------------------
+-- -- Type Checking 
+-- --------------------
 
 type Result a = Either String a 
 
 throwError = Left
-
-kindDown :: Context -> Type -> Kind -> Result ()
-kindDown ctx t Star = case t of 
-
-    TFree x -> case lookup x ctx of 
-        Just (HasKind Star) -> return ()
-        Nothing -> throwError "unknown identifier"
-
-    Fun k1 k2 -> do 
-        kindDown ctx k1 Star 
-        kindDown ctx k2 Star 
 
 typeUp0 :: Context -> TermUp -> Result Type
 typeUp0 = typeUp 0 
@@ -108,38 +96,56 @@ typeUp :: Int -> Context -> TermUp -> Result Type
 typeUp i ctx termU =  
 
     case termU of 
-        Ann termD t -> do 
-            kindDown ctx t Star
-            return t
+        Ann termD rho -> do 
+            typeDown i ctx rho VStar
+            let evaledType = evalDown rho []
+            typeDown i ctx termD evaledType
+            return evaledType
+
+        Pi t1 t2 -> do 
+            let evaledType = evalDown t1 []
+            typeDown 
+                (i + 1) 
+                ((Local i, evaledType) : ctx)
+                (substDown 0 (Free (Local i)) t2) VStar
+            return VStar
 
         Free x -> case lookup x ctx of 
-            Just (HasType t) -> return t
+            Just t -> return t
             Nothing -> throwError "unknown identifier"
 
         Apply e1 e2 -> do 
             fnType <- typeUp i ctx e1
             case fnType of 
-                Fun t1 t2 -> do 
+                VPi t1 t2 -> do 
                     typeDown i ctx e2 t1
-                    return t2
+                    return (t2 (evalDown e2 []))
                 _ -> throwError "Cannot apply, not a function"
+
+        Star -> Right VStar 
+
+        Bound i -> undefined 
+        
 
 -- | Check a term's type 
 typeDown :: Int -> Context -> TermDown -> Type -> Result ()
-typeDown i ctx termD suppliedType = case (termD, suppliedType) of 
+typeDown i ctx termD suppliedType = 
+    case (termD, suppliedType) of 
 
-    (Inf termU, _) -> do 
-        inferredType <- typeUp i ctx termU 
-        unless (inferredType == suppliedType) (throwError "Type mismatch")
+        (Inf termU, _) -> do 
+            inferredType <- typeUp i ctx termU 
+            unless (quote0 inferredType == quote0 suppliedType) 
+                (throwError "Type mismatch")
 
-    (Lambda lambdaTerm, Fun t1 t2) -> 
-        typeDown 
-            (i + 1) 
-            ((Local i, HasType t1) : ctx) 
-            (substDown 0 (Free (Local i)) lambdaTerm)
-            t2
+        (Lambda lambdaTerm, VPi t1 t2) -> 
+            typeDown 
+                (i + 1) 
+                ((Local i, t1) : ctx) 
+                (substDown 0 (Free (Local i)) lambdaTerm)
+                (t2 (vfree (Local i)))
 
-    tup -> throwError $ "type mismatch: " ++ show tup
+        (otherTerm, otherType) -> throwError 
+            $ "type mismatch: " ++ show (otherTerm, quote0 otherType)
 
 substUp :: Int -> TermUp -> TermUp -> TermUp 
 substUp i termU termUp_ = case termUp_ of 
@@ -147,15 +153,17 @@ substUp i termU termUp_ = case termUp_ of
     Bound j -> if i == j then termU else Bound j
     Free name -> Free name 
     Apply e1 e2 -> Apply (substUp i termU e1) (substDown i termU e2)
-
+    Pi t1 t2 -> Pi (substDown i termU t1) (substDown i termU t2)
+    Star -> Star
+    
 substDown :: Int -> TermUp -> TermDown -> TermDown
 substDown i termU termDown_ = case termDown_ of 
     Inf e -> Inf (substUp i termU e)
     Lambda e -> Lambda (substDown (i + 1) termU e)
 
---------------------
--- Quotation
---------------------
+-- --------------------
+-- -- Quotation
+-- --------------------
 
 quote0 :: Value -> TermDown
 quote0 = quote 0 
@@ -164,6 +172,8 @@ quote :: Int -> Value -> TermDown
 quote i val = case val of 
     VLambda f -> Lambda (quote (i + 1) (f (vfree (Quote i))))
     VNeutral n -> Inf (neutralQuote i n)
+    VPi v f -> Inf (Pi (quote i v) (quote (i + 1) (f (vfree (Quote i)))))
+    VStar -> Inf Star
 
 neutralQuote :: Int -> Neutral -> TermUp 
 neutralQuote i n = case n of 
@@ -175,9 +185,9 @@ boundFree i n = case n of
     Quote k -> Bound (i - k - 1)
     x -> Free x
 
---------------------
--- Lambda typed Prelude
---------------------
+-- --------------------
+-- Prelude
+-- --------------------
 
 id_ :: TermDown
 id_ = Lambda (Inf (Bound 0))
@@ -185,24 +195,24 @@ id_ = Lambda (Inf (Bound 0))
 const_ :: TermDown
 const_ = Lambda $ Lambda $ Inf $ Bound 1
 
-mkFreeType :: String -> Type
-mkFreeType a = TFree $ Global a 
+-- mkFreeType :: String -> Type
+-- mkFreeType a = TFree $ Global a 
 
-mkTerm :: String -> TermDown
-mkTerm x = Inf $ Free $ Global x
+-- mkTerm :: String -> TermDown
+-- mkTerm x = Inf $ Free $ Global x
 
-term1 :: TermUp
-term1 = Ann id_ (Fun (mkFreeType "a") (mkFreeType "a")) `Apply` mkTerm "y"
+-- term1 :: TermUp
+-- term1 = Ann id_ (Fun (mkFreeType "a") (mkFreeType "a")) `Apply` mkTerm "y"
 
-term2 :: TermUp
-term2 = Ann const_
-    (Fun (Fun (mkFreeType "b") (mkFreeType "b"))
-    (Fun (mkFreeType "a")
-    (Fun (mkFreeType "b") (mkFreeType "b"))))
-        @@ id_
-        @@ mkTerm "y"
+-- term2 :: TermUp
+-- term2 = Ann const_
+--     (Fun (Fun (mkFreeType "b") (mkFreeType "b"))
+--     (Fun (mkFreeType "a")
+--     (Fun (mkFreeType "b") (mkFreeType "b"))))
+--         @@ id_
+--         @@ mkTerm "y"
 
-env1 :: Context
-env1 = [(Global "y", HasType (mkFreeType "a")), (Global "a", HasKind Star)]
+-- env1 :: Context
+-- env1 = [(Global "y", HasType (mkFreeType "a")), (Global "a", HasKind Star)]
 
-env2 = (Global "b", HasKind Star) : env1
+-- env2 = (Global "b", HasKind Star) : env1

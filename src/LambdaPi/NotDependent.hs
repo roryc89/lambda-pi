@@ -1,3 +1,6 @@
+{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
+
+
 module LambdaPi.NotDependent where 
 
 -- import Data.Text
