@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a3b5e97d5c0d67c110b17a1493978919ff67cee36ba8c7d6107fda61739cbacd
+-- hash: c610546667c0a494536f3702fe97a71df9b6eca5f4c87524c108f41dd3aa29b2
 
 name:           lambda-pi
 version:        0.1.0.0
@@ -28,7 +28,6 @@ source-repository head
 library
   exposed-modules:
       LambdaPi.Main
-      LambdaPi.NotDependent
       Lib
   other-modules:
       Paths_lambda_pi
@@ -44,7 +43,7 @@ executable lambda-pi-exe
       Paths_lambda_pi
   hs-source-dirs:
       app
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -fwarn-incomplete-patterns
   build-depends:
       base >=4.7 && <5
     , lambda-pi
