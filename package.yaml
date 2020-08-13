@@ -42,7 +42,7 @@ executables:
 
 tests:
   lambda-pi-test:
-    main:                Spec.hs
+    main:                test.hs
     source-dirs:         test
     ghc-options:
     - -threaded
@@ -50,3 +50,7 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - lambda-pi
+    - tasty
+    - tasty-hunit
+    - tasty-rerun
+    - neat-interpolation

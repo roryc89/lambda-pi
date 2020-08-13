@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: ./test
+      component: "lambda-pi:test:lambda-pi-test"
+    - path: ./src
+      component: "lambda-pi:lib"
+    - path: ./app
+      component: "lambda-pi:app"

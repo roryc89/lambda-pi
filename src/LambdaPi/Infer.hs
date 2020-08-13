@@ -93,21 +93,4 @@ inferTerm ctx t_ = case t_ of
 
 
 
-    
-
-    -- TypeConst s -> return $ 
-
-
-    -- t -> Right t
-
-
-            
-
-
-
--- typeInferStatement :: [(Text, Term)] -> Term -> Either TypeError Term
--- typeInferStatement ctx t = case t of 
---     Int i -> Right $ Int i
-    
-
 
