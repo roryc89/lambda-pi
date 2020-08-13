@@ -19,13 +19,28 @@ tests = testGroup "LambdaPi.Infer"
             
             , ("lambda - id", idLambda, VarIdx 0 `Arrow` VarIdx 0)
             
-            , ("lambda - const", constLambda, VarIdx 0 `Arrow` (VarIdx 1 `Arrow` VarIdx 0))
+            , ( "lambda - const"
+              , constLambda
+              , VarIdx 0 `Arrow` (VarIdx 1 `Arrow` VarIdx 0)
+              )
             
             , ("apply - id", idLambda `App` Int 1, typeInt)
             
-            , ("apply - const", constLambda `App` String "hello", VarIdx 0 `Arrow` typeString)
+            , ( "apply - const"
+              , constLambda `App` String "hello"
+              , VarIdx 0 `Arrow` typeString
+              )
             ]
+            
          
+        ]
+
+    , testGroup "Failing" 
+        [ testGroup "Basic inference" 
+            [ testCase "Int annotated" $ 
+                runInferTerm (Int 1 `Ann` typeString) @?=
+                    Left (TypeMismatch (TypeConst "String") (TypeConst "Int"))
+            ]
         ]
     ]
     where 

@@ -51,7 +51,6 @@ type Infer a =
       a
   )       
 
-
 runInferTerm ::  Term -> Either TypeError Term
 runInferTerm term = 
     runExcept $ evalStateT (runReaderT (inferTerm term) newEnv) newInferState
@@ -101,6 +100,36 @@ inferTerm t_ = case t_ of
     Arrow t1 t2 -> return $ Arrow Type Type 
 
     Type -> return Type
+
+    NatIntPlus termL termR -> intBinop termL termR 
+
+    NatIntSub termL termR -> intBinop termL termR 
+    
+    NatIntMul termL termR -> intBinop termL termR 
+    
+    NatStringSlice start end str -> do
+        start `isOfType` typeInt
+        end `isOfType` typeInt
+        str `isOfType` typeString 
+        return $ typeInt `Arrow` typeInt `Arrow` typeString `Arrow` typeString 
+
+    NatStringConcat str1 str2 -> do
+        str1 `isOfType` typeString
+        str2 `isOfType` typeString
+        return $ typeString `Arrow` typeString `Arrow` typeString  
+
+    where 
+        intBinop termL termR = do
+            termL `isOfType` typeInt
+            termR `isOfType` typeInt
+            return $ typeInt `Arrow` typeInt `Arrow` typeInt
+
+        
+
+isOfType :: Term -> Term -> Infer ()
+isOfType term tipe = do 
+    inferred <- inferTerm term 
+    checkTypeMatch inferred tipe
 
 checkTypeMatch :: Term -> Term -> Infer ()
 checkTypeMatch expected actual = do

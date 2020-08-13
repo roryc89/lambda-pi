@@ -35,6 +35,12 @@ data Term
     -- Literals
     | Int Int
     | String Text
+    -- Native
+    | NatIntPlus Term Term
+    | NatIntSub Term Term
+    | NatIntMul Term Term
+    | NatStringSlice Term Term Term
+    | NatStringConcat Term Term
     deriving (Show, Eq, Ord)
 
 -- | Untyped lambda (without annotation)
