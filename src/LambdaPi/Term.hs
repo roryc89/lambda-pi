@@ -26,17 +26,20 @@ data Term
     = Ann Term TypeTerm -- | Type annotation
     | App Term Term -- | Apply
     | Lam Text (Maybe Term) Term  -- | Lambda
+    | Var Text -- | Used variable
     | TypeConst Text -- | Type constant such as "Int" or "List"
     | VarIdx Int -- | A bound variable using de bruijn indices
     | TypeVarDecl Text (Maybe Term) Term -- | Declare a type variable
     | Arrow Term Term -- | Arrow type (Type of a lambda)
     | Type -- | The type of types
-    
     -- Literals
     | Int Int
     | String Text
     deriving (Show, Eq, Ord)
 
+-- | Untyped lambda (without annotation)
+lamU :: Text -> Term -> Term
+lamU arg = Lam arg Nothing
 
 type TypeTerm = Term
 
