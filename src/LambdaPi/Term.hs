@@ -9,9 +9,7 @@ import Control.Monad.Except
 import Control.Monad.State
 import Control.Monad.Reader
 import Control.Monad.Identity
-
 import Data.Text (Text)
-
 
 data Statement 
     = Decl Text Term
@@ -32,6 +30,7 @@ data Term
     | TypeVarDecl Text (Maybe Term) Term -- | Declare a type variable
     | Arrow Term Term -- | Arrow type (Type of a lambda)
     | Type -- | The type of types
+    | Case Term [(Pattern, Term)]
     -- Literals
     | Int Int
     | String Text
@@ -41,6 +40,13 @@ data Term
     | NatIntMul Term Term
     | NatStringSlice Term Term Term
     | NatStringConcat Term Term
+    deriving (Show, Eq, Ord)
+
+data Pattern
+    = PVar Text
+    | PInt Int
+    | PString Text
+    | PCtr Text [Pattern]
     deriving (Show, Eq, Ord)
 
 mapTerms :: (Term -> Term) -> Term -> Term
@@ -54,6 +60,7 @@ mapTerms f t = f $ case t of
     TypeVarDecl txt tMay t2 -> TypeVarDecl txt (fmap (mapTerms f) tMay) (mapTerms f t2) 
     Arrow t1 t2 -> Arrow (mapTerms f t1) (mapTerms f t2)
     Type  -> Type 
+    Case t branches -> Case (mapTerms f t) $ fmap (fmap (mapTerms f)) branches
     Int int -> Int int
     String txt -> String txt
     NatIntPlus t1 t2 -> NatIntPlus (mapTerms f t1) (mapTerms f t2)
@@ -76,10 +83,9 @@ replaceVarIdxWith _ = \_ t -> t
 lamU :: Text -> Term -> Term
 lamU arg = Lam arg Nothing
 
-type TypeTerm = Term
 
 data Ctr 
-    = Ctr Text TypeTerm
+    = Ctr Text Term
     deriving (Show, Eq, Ord)
 
 

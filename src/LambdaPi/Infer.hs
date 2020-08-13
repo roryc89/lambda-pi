@@ -22,6 +22,7 @@ data TypeError
     = TypeMismatch Term Term
     | NotAFunction Term
     | UnknownVariable Text
+    | PatternDoesNotFitType Term Pattern
     deriving (Show, Eq)
 
 -- | Inference state
@@ -69,6 +70,7 @@ inferTerm t_ = case t_ of
         return inferred 
     
     App fn arg -> do
+        traceM "App"
         fnT <- inferTerm fn
         case fnT of
             Arrow arrowArg body -> do
@@ -79,6 +81,7 @@ inferTerm t_ = case t_ of
             _ -> throwError $ NotAFunction fn
 
     Lam argName argAnn body -> do 
+        traceM "Lam"
         argT <- maybe fresh return argAnn
         bodyT <- extendTypeEnv argName argT $ inferTerm body
         return $ argT `Arrow` bodyT 
@@ -104,6 +107,15 @@ inferTerm t_ = case t_ of
 
     Type -> return Type
 
+    Case term branches -> do
+        termT <- inferTerm term
+        forM_ branches (\(p, res) -> do 
+            fits <- patternFitsType termT p
+            unless fits $
+                throwError $ PatternDoesNotFitType termT p)
+
+        return termT
+
     NatIntPlus termL termR -> intBinop termL termR 
 
     NatIntSub termL termR -> intBinop termL termR 
@@ -127,12 +139,18 @@ inferTerm t_ = case t_ of
             termR `isOfType` typeInt
             return $ typeInt `Arrow` typeInt `Arrow` typeInt
 
+patternFitsType :: Term -> Pattern -> Infer Bool 
+patternFitsType termT p = case (termT, p) of 
+    (Int _, PInt _) -> return True
+    (String _, PString _) -> return True
+    (_, PVar _) -> return True
+    _ -> return False
+
 
 isOfType :: Term -> Term -> Infer ()
 isOfType term tipe = do 
     inferred <- inferTerm term 
     checkTypeMatch inferred tipe
-
 
 checkTypeMatch :: Term -> Term -> Infer ()
 checkTypeMatch expected actual = do
