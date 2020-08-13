@@ -1,0 +1,301 @@
+PRELUDE 
+
+
+-- Native 
+
+add : Int -> Int -> Int 
+mul : Int -> Int -> Int
+sub : Int -> Int -> Int
+
+type Nat
+    = Zero : Nat
+    | Succ : Nat -> Nat
+
+type Vect : Nat -> Type -> Type
+    = Nil : Vect Z a
+    | Cons : (x : a) -> (xs : Vect k a) -> Vect (S k) a
+
+type Bool = True | False
+
+END PRELUDE
+
+----
+
+i = 1
+
+>>
+    [ Decl "i" (Int 1)
+    ]
+
+>>
+    Right
+        [ Decl "i" (TypeConst "Int") (Int 1 :- TypeConst "Int")
+        ]
+
+----
+
+i = 1 : Int 
+
+>>
+    [ Decl "i" (Ann (Int 1) (TypeConst "Int"))
+    ]
+
+>>
+    Right
+        [ Decl "i" (TypeConst "Int") (Int 1 (TypeConst "Int"))
+        ]
+
+----
+
+id = \a => a
+
+    [ Decl "id" (Lam "a" (Var "a"))
+    ]
+
+>>
+    Right
+        [ Decl "id" (Local 1 --> Local 1) 
+
+            ( Lam ("a" :- Local 1) (Var "a" :- Local 1)
+            )
+        ]
+----
+
+id = \a : Int => a
+
+>>
+    [ Decl "id" (Lam (Arg "a" `Ann` TypeConst "Int") (Var "a"))
+    ]
+
+>>
+    Right
+        [ Decl "id" (TypeConst "Int" --> TypeConst "Int") 
+
+            ( Lam (Arg "a") (TypeConst "Int") (Var "a" :- TypeConst "Int")
+            )
+        ]
+
+----
+
+id = \a => a : Ann
+
+>>
+    [ Decl "id" (Lam (Arg "a")  (Ann (Var "a") (TypeConst "Int")))
+    ]
+
+>>
+    Right
+        [ Decl "id" 
+            ( Lam (Arg "a") (Var "a" :- TypeConst "Int")
+                :- (TypeConst "Int" --> TypeConst "Int") 
+            )
+        ]
+
+----
+
+x = 1 : Int : Type
+
+>>
+    [ Decl "x" (Int 1 `Ann` TypeConst "Int" `Ann` TypeKind) 
+    ]
+
+>>
+    Right
+        [ Decl "x" (Int 1 :- TypeConst "Int")
+        ]
+
+----
+
+add1 = \i -> plus 1 i 
+
+>> 
+   [ Decl "add1" (Lam "i" (Var "plus" `App` (Int 1) (Var "i")))
+   ]
+
+>> 
+    Right 
+        [ Decl "add1" (TypeConst "Int" --> TypeConst "Int")
+            (..) -- NOT TYPED
+        ]
+----
+
+add1 = plus 1
+
+>> 
+    [ Decl "add1" (Var "plus" `App` (Int 1))
+    ]
+
+>> 
+    Right 
+        [ Decl "add1" (TypeConst "Int" --> TypeConst "Int")
+            (..) -- NOT TYPED
+        ]
+
+----
+
+one = 1
+
+add1 = plus one
+
+>> 
+    [ Decl "one" (Int 1)
+    , Decl "add1" (Var "plus" `App` (Int 1))
+    ]
+
+>> 
+    Right 
+        [ Decl "i" (TypeConst "Int") (Int 1 :- TypeConst "Int")
+        , Decl "add1" (TypeConst "Int" --> TypeConst "Int")
+            (...) -- NOT TYPED
+        ]
+
+
+----
+
+type T
+
+>> 
+    [ TypeDecl "T" []
+    ]
+
+>> 
+    Right 
+        [ [ TypeDecl "T" [] :- Type ]
+        ]
+
+----
+
+type T = A | B
+
+>> 
+    [ TypeDecl "T" [ Ctr "A", Ctr "B]
+    ]
+
+>> 
+    Right
+        [ TypeDecl "T" [ Ctr "A", Ctr "B"] -: Type
+        ]
+
+----
+
+type Nat
+    = Zero
+    | Succ : Nat -> Nat
+
+>> 
+    [ TypeDecl "Nat"  
+        [ Ctr "Zero" -: TypeConst "Nat" 
+        , Ctr "Succ" -: TypeConst "Nat" -> TypeConst "Nat"
+        ]
+        -: Type
+    ]
+
+>> 
+    Right
+        [ TypeDecl "Nat"  
+            [ Ctr "Zero" -: TypeConst "Nat" 
+            , Ctr "Succ" -: TypeConst "Nat" -> TypeConst "Nat"
+            ]
+            -: Type
+        ]
+
+----
+
+type var a
+    . List : a -> Type
+    = Nil
+    | Cons : a -> (List a) -> Type
+
+>> 
+    [ VarDecl "a" $
+        TypeDecl "List" 
+            [ Ctr "Nil" -: TypeConst "List" `App` Var "a"
+            , Ctr "Cons" -: 
+                Var "a" -> 
+                TypeConst "List" `App` Var "a" -> 
+                TypeConst "List" `App` Var "a"
+            ]
+    ]
+
+>> 
+    Right 
+        [ TypeDecl "List" 
+            [ Ctr "Nil" -: TypeConst "List" `App` VarIdx 1
+            , Ctr "Cons" -: 
+                VarIdx 1 -> 
+                TypeConst "List" `App` VarIdx 1 -> 
+                TypeConst "List" `App` VarIdx 1
+            ]
+        ]
+----
+
+type var a
+    . List : a -> Type
+    = Nil
+    | Cons : a -> (List a) -> Type
+
+
+i1 : Int 
+i1 = 10 
+
+i2 = 20
+
+list = Cons i1 i2
+
+
+>> 
+    [ VarDecl "a" $
+        TypeDecl "List" 
+            [ Ctr "Nil" -: TypeConst "List" `App` Var "a"
+            , Ctr "Cons" -: 
+                Var "a" -> 
+                TypeConst "List" `App` Var "a" -> 
+                TypeConst "List" `App` Var "a"
+            ]
+
+    , Decl "i1" (Int 10 `Ann` TypeConst "Int")
+
+    , Decl "i2" (Int 20)
+    
+    , Decl "list" 
+        (Cons `App` Var "i1" `App` Var "i2")
+    ]
+    
+
+>> 
+    Right 
+        [ TypeDecl "List" 
+            [ Ctr "Nil" -: TypeConst "List" `App` VarIdx 1
+            , Ctr "Cons" -: 
+                VarIdx 1 -> 
+                TypeConst "List" `App` VarIdx 1 -> 
+                TypeConst "List" `App` VarIdx 1
+            ]
+
+        , Decl "i1" (Int 10 -: TypeConst "Int")
+        
+        , Decl "i2" (Int 20 -: TypeConst "Int")
+        
+        , Decl "list" 
+            ((Cons `App` Var "i1" `App` Var "i2") -: )
+        ]
+
+
+!!!!!!!!!!!!!!!! DEP TYPES 
+
+
+StringOrInt : Bool -> Type
+StringOrInt = \b -> case b 
+    | True -> String 
+    | False -> Int
+
+
+getStringOrInt : var b. (b : Bool) -> StringOrInt b
+getStringOrInt False = "ninety four"
+getStringOrInt True = 94
+
+>> 
+
+    [ Decl "StringOrInt" $ 
+      Lam (Arg "b") (Case (Var "b") )
+    ]

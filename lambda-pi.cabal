@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c610546667c0a494536f3702fe97a71df9b6eca5f4c87524c108f41dd3aa29b2
+-- hash: 61f1fce8a3921c65caf25e6f2ee8d1fd4c9d608f0a03611dc500d2ee4db77424
 
 name:           lambda-pi
 version:        0.1.0.0
@@ -27,7 +27,10 @@ source-repository head
 
 library
   exposed-modules:
+      LambdaPi.Env
+      LambdaPi.Infer
       LambdaPi.Main
+      LambdaPi.Term
       Lib
   other-modules:
       Paths_lambda_pi
@@ -35,6 +38,9 @@ library
       src
   build-depends:
       base >=4.7 && <5
+    , containers
+    , mtl
+    , text
   default-language: Haskell2010
 
 executable lambda-pi-exe
@@ -46,7 +52,10 @@ executable lambda-pi-exe
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -fwarn-incomplete-patterns
   build-depends:
       base >=4.7 && <5
+    , containers
     , lambda-pi
+    , mtl
+    , text
   default-language: Haskell2010
 
 test-suite lambda-pi-test
@@ -59,5 +68,8 @@ test-suite lambda-pi-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , containers
     , lambda-pi
+    , mtl
+    , text
   default-language: Haskell2010
