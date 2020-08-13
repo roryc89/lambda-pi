@@ -12,6 +12,8 @@ import Control.Monad.Identity
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
+import qualified Data.Text as T
+import Debug.Trace
 import LambdaPi.Term
 
 -- Type Inferrence
@@ -33,7 +35,7 @@ newInferState = InferState { count = 0 }
 
 data Env = Env 
   { types :: Map.Map Text Term 
-  , idxedTyped :: Map.Map Int Term
+  , idxedTypes :: Map.Map Int Term
   }
   deriving (Eq, Show)
 
@@ -66,12 +68,13 @@ inferTerm t_ = case t_ of
         checkTypeMatch ann inferred
         return inferred 
     
-    App fn arg -> 
-        case fn of
-            Lam argName argAnn body -> do
+    App fn arg -> do
+        fnT <- inferTerm fn
+        case fnT of
+            Arrow arrowArg body -> do
+                checkTypeMatchNoVars arrowArg arg
                 argT <- inferTerm arg
-                extendTypeEnv argName argT $ 
-                    inferTerm body
+                return $ replaceVarIdxWith arrowArg argT body
 
             _ -> throwError $ NotAFunction fn
 
@@ -84,7 +87,7 @@ inferTerm t_ = case t_ of
 
     TypeConst t -> return Type 
 
-    VarIdx i -> return Type
+    VarIdx i -> lookupIdxType i
 
     TypeVarDecl name annMay term -> 
         case annMay of 
@@ -124,12 +127,12 @@ inferTerm t_ = case t_ of
             termR `isOfType` typeInt
             return $ typeInt `Arrow` typeInt `Arrow` typeInt
 
-        
 
 isOfType :: Term -> Term -> Infer ()
 isOfType term tipe = do 
     inferred <- inferTerm term 
     checkTypeMatch inferred tipe
+
 
 checkTypeMatch :: Term -> Term -> Infer ()
 checkTypeMatch expected actual = do
@@ -137,6 +140,15 @@ checkTypeMatch expected actual = do
     actualSub <- getIdxSubstitution actual
     when (expectedSub /= actualSub) $ 
         throwError $ TypeMismatch expectedSub actualSub
+
+checkTypeMatchNoVars :: Term -> Term -> Infer ()
+checkTypeMatchNoVars expected actual = 
+    when (notVarIdx expected && notVarIdx actual) $ 
+        checkTypeMatch expected actual
+    where 
+        notVarIdx t = case t of 
+            VarIdx _ -> False
+            _ -> True
 
 -- | Get a new indexed term
 fresh :: Infer Term
@@ -150,6 +162,17 @@ extendTypeEnv :: Text -> Term -> Infer a -> Infer a
 extendTypeEnv name term =
     local (\(Env types idxs) -> Env (Map.insert name term types) idxs)
 
+extendIdxEnv :: Int -> Term -> Infer a -> Infer a
+extendIdxEnv name term =
+    local (\(Env types idxs) -> Env types (Map.insert name term idxs))
+
+extendIdxEnvFromTerm :: Term -> Term -> Infer a -> Infer a
+extendIdxEnvFromTerm term = case term of 
+    VarIdx i -> extendIdxEnv i 
+    _ -> \_ infer -> infer
+   
+    -- local (\(Env types idxs) -> Env types (Map.insert name term idxs))
+
 lookupType :: Text -> Infer Term
 lookupType name = do
     var <- lookupTypeMay name
@@ -161,7 +184,13 @@ lookupTypeMay :: Text -> Infer (Maybe Term)
 lookupTypeMay name = do
     (Env m idxs) <- ask 
     return $ Map.lookup name m
-    
+
+lookupIdxType :: Int -> Infer Term
+lookupIdxType idx = do
+    var <- lookupIdxMay idx
+    case var of 
+        Nothing -> throwError $ UnknownVariable $ T.pack $ show idx 
+        Just t -> return t
 
 lookupIdxMay :: Int -> Infer (Maybe Term)
 lookupIdxMay idx = do
