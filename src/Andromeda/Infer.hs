@@ -2,7 +2,9 @@
 
 module Andromeda.Infer where
 
-import Andromeda.Syntax
+import Andromeda.InferType
+import Andromeda.Expr
+import Andromeda.Error
 import Andromeda.Ctx (extend, lookupValue, lookupType)
 import Control.Monad.Except (throwError, unless)
 import Control.Monad.Extra ((&&^))

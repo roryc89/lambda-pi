@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 16a8e360d6b600c6929644e0c3c252b169a4481e9bdc643b8760235b6e663922
+-- hash: e8840a2d1dbaab13c34cf3217c66897795e7d7491c1d61bbb40343723ea7b7b3
 
 name:           lambda-pi
 version:        0.1.0.0
@@ -28,9 +28,11 @@ source-repository head
 library
   exposed-modules:
       Andromeda.Ctx
+      Andromeda.Error
+      Andromeda.Expr
       Andromeda.Infer
+      Andromeda.InferType
       Andromeda.Main
-      Andromeda.Syntax
       LambdaPi.Env
       LambdaPi.Infer
       LambdaPi.Main

@@ -1,8 +1,10 @@
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Andromeda.Syntax where 
+module Andromeda.InferType where 
 
+import Andromeda.Error
+import Andromeda.Expr
 import Control.Monad (when)
 import Control.Monad.Except
 import Control.Monad.State
@@ -12,15 +14,6 @@ import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 
-
-data TypeError 
-    = TypeMismatch [Expr]
-    | FunctionExpected Expr
-    | TypeExpected Expr
-    | UnknownVariable Variable
-    -- | PatternDoesNotFitType Expr Pattern
-    | Errs TypeError TypeError
-    deriving (Show, Eq, Ord)
 
 -- | Inference state
 newtype InferState = 
@@ -49,23 +42,6 @@ type Infer a =
       )
       a
   )
-
-data Variable 
-    = StringVar Text
-    | GeneratedVar Text Int 
-    | Dummy
-    deriving (Show, Eq, Ord)
-
-data Expr 
-    = Var Variable
-    | Universe Int
-    | Pi Abstraction
-    | Lam Abstraction
-    | App Expr Expr
-    deriving (Show, Eq, Ord)
-type TypeExpr = Expr 
-
-type Abstraction = (Variable, Expr, Expr)
 
 refresh :: Variable -> Infer Variable
 refresh v = do

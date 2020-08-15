@@ -2,7 +2,10 @@
 {-# LANGUAGE NamedFieldPuns #-}
 module Andromeda.Ctx where 
 
-import Andromeda.Syntax (Variable, Infer, Expr, Env(..), TypeError(..), TypeExpr)
+import Andromeda.Expr
+import Andromeda.InferType
+import Andromeda.Error
+
 import qualified Data.Map as Map
 import Control.Monad.Error.Class (throwError)
 import Control.Monad.Reader (ask, local)
