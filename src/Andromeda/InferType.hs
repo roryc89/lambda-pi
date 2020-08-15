@@ -52,17 +52,17 @@ refresh v = do
         GeneratedVar x _ -> GeneratedVar x $ count s
         Dummy ->  GeneratedVar "_" $ count s
 
-substitute :: [(Variable, Expr)] -> Expr -> Infer Expr
-substitute s e = case e of 
-    Var v -> pure $ fromMaybe (Var v) $ lookup v s
-    Universe k -> return $ Universe k 
-    Pi a -> Pi <$> substituteAbstraction s a
-    Lam a -> Lam <$> substituteAbstraction s a
-    App e1 e2 -> App <$> substitute s e1 <*> substitute s e2
+-- substitute :: [(Variable, Expr)] -> Expr -> Infer Expr
+-- substitute s e = case e of 
+--     Var v -> pure $ fromMaybe (Var v) $ lookup v s
+--     Universe k -> return $ Universe k 
+--     Pi a -> Pi <$> substituteAbstraction s a
+--     Lam a -> Lam <$> substituteAbstraction s a
+--     App e1 e2 -> App <$> substitute s e1 <*> substitute s e2
 
-substituteAbstraction :: [(Variable, Expr)] -> Abstraction -> Infer Abstraction
-substituteAbstraction s (var, t, e) = do 
-    newX <- refresh var
-    var_ <- substitute s t
-    e_ <- substitute ((var, Var newX) : s) e
-    return (newX, var_, e_)
+-- substituteAbstraction :: [(Variable, Expr)] -> Abstraction -> Infer Abstraction
+-- substituteAbstraction s (var, t, e) = do 
+--     newX <- refresh var
+--     var_ <- substitute s t
+--     e_ <- substitute ((var, Var newX) : s) e
+--     return (newX, var_, e_)

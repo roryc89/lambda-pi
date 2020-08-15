@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e8840a2d1dbaab13c34cf3217c66897795e7d7491c1d61bbb40343723ea7b7b3
+-- hash: a3a1470761b85eb05545623948a865347fc34d7a9cd9bb68a1a33d1ceaafe6f5
 
 name:           lambda-pi
 version:        0.1.0.0
@@ -27,6 +27,7 @@ source-repository head
 
 library
   exposed-modules:
+      Andromeda.Common
       Andromeda.Ctx
       Andromeda.Error
       Andromeda.Expr
@@ -70,6 +71,7 @@ test-suite lambda-pi-test
   type: exitcode-stdio-1.0
   main-is: test.hs
   other-modules:
+      Test.Andromeda.Infer
       Test.LambdaPi.Infer
       Paths_lambda_pi
   hs-source-dirs:

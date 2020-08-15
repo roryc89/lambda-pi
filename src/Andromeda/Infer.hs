@@ -6,37 +6,18 @@ import Andromeda.InferType
 import Andromeda.Expr
 import Andromeda.Error
 import Andromeda.Ctx (extend, lookupValue, lookupType)
-import Control.Monad.Except (throwError, unless)
+import Control.Monad.Except
 import Control.Monad.Extra ((&&^))
+import Control.Monad.State
+import Control.Monad.Reader
+import Control.Monad.Identity
 
-normalize :: Expr -> Infer Expr 
-normalize expr = case expr of 
-    Var v -> do 
-        valMay <- lookupValue v 
-        case valMay of 
-            Nothing -> pure $ Var v 
-            Just val -> normalize val 
+runInferType :: Expr -> Either TypeError Expr 
+runInferType expr = 
+    runExcept $ evalStateT (runReaderT go newEnv) newInferState
+    where 
+        go = inferType expr
 
-    App e1 e2 -> do 
-        e2 <- normalize e2 
-        e1Norm <- normalize e1 
-        case e1Norm of 
-            Lam (var, _, bodyExpr) -> do 
-                sub <- substitute [(var, e2)] bodyExpr
-                normalize sub 
-            e1 -> pure $ App e1 e2
-
-    Universe k -> pure $ Universe k 
-
-    Pi a -> Pi <$> normalizeAbstraction a
-
-    Lam a -> Lam <$> normalizeAbstraction a
-    
-normalizeAbstraction :: Abstraction -> Infer Abstraction
-normalizeAbstraction (var, t, e) = do 
-    t <- normalize t 
-    e <- extend var t Nothing $ normalize e
-    pure (var, t, e)
 
 inferType :: Expr -> Infer Expr
 inferType expr = 
@@ -110,4 +91,32 @@ equal e1 e2 = do
             sub2 <- substitute [(y, z)] e2
             equal t1 t2 &&^ equal sub1 sub2
 
-        
+normalize :: Expr -> Infer Expr 
+normalize expr = case expr of 
+    Var v -> do 
+        valMay <- lookupValue v 
+        case valMay of 
+            Nothing -> pure $ Var v 
+            Just val -> normalize val 
+
+    App e1 e2 -> do 
+        e2 <- normalize e2 
+        e1Norm <- normalize e1 
+        case e1Norm of 
+            Lam (var, _, bodyExpr) -> do 
+                sub <- substitute [(var, e2)] bodyExpr
+                normalize sub 
+            e1 -> pure $ App e1 e2
+
+    Universe k -> pure $ Universe k 
+
+    Pi a -> Pi <$> normalizeAbstraction a
+
+    Lam a -> Lam <$> normalizeAbstraction a
+    
+normalizeAbstraction :: Abstraction -> Infer Abstraction
+normalizeAbstraction (var, t, e) = do 
+    t <- normalize t 
+    e <- extend var t Nothing $ normalize e
+    pure (var, t, e)
+

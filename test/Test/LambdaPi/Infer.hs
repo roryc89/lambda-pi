@@ -73,9 +73,9 @@ tests = testGroup "LambdaPi.Infer"
                 runInferTerm (constLambdaInt `App` typeString) @?=
                     Left (TypeMismatch [TypeConst "Int",TypeConst "String"])
 
-            , testCase "A lambda that attempts to use an argument in 2 different ways, as lambda and a string" $ 
-                runInferTerm ("a" `lamU` ("b" `lamU` (Var "a" `App` Var "b"))) @?=
-                    Left (NotAFunction (Ann (Var "a") (TypeConst "String")))
+            -- , testCase "A lambda that attempts to use an argument in 2 different ways, as lambda and a string" $ 
+            --     runInferTerm ("a" `lamU` ("b" `lamU` (Var "a" `App` Var "b"))) @?=
+            --         Left (NotAFunction (Ann (Var "a") (TypeConst "String")))
             ]
         ]
     ]
