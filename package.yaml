@@ -24,6 +24,7 @@ dependencies:
 - text
 - mtl
 - containers
+- extra
 
 library:
   source-dirs: src

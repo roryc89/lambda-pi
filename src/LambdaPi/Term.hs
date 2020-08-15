@@ -35,11 +35,11 @@ data Term
     | Int Int
     | String Text
     -- Native
-    | NatIntPlus Term Term
-    | NatIntSub Term Term
-    | NatIntMul Term Term
-    | NatStringSlice Term Term Term
-    | NatStringConcat Term Term
+    | NatIntPlus1 Term
+    -- | NatIntSub Term Term
+    -- | NatIntMul Term Term
+    -- | NatStringSlice Term Term Term
+    -- | NatStringConcat Term Term
     deriving (Show, Eq, Ord)
 
 data Pattern
@@ -63,11 +63,12 @@ mapTerms f t = f $ case t of
     Case t branches -> Case (mapTerms f t) $ fmap (fmap (mapTerms f)) branches
     Int int -> Int int
     String txt -> String txt
-    NatIntPlus t1 t2 -> NatIntPlus (mapTerms f t1) (mapTerms f t2)
-    NatIntSub t1 t2 -> NatIntSub (mapTerms f t1) (mapTerms f t2)
-    NatIntMul t1 t2 -> NatIntMul (mapTerms f t1) (mapTerms f t2)
-    NatStringSlice t1 t2 t3 -> NatStringSlice (mapTerms f t1) (mapTerms f t2) (mapTerms f t3)
-    NatStringConcat t1 t2 -> NatStringConcat (mapTerms f t1) (mapTerms f t2)
+    NatIntPlus1 t -> NatIntPlus1 (mapTerms f t)
+    -- NatIntPlus t1 t2 -> NatIntPlus (mapTerms f t1) (mapTerms f t2)
+    -- NatIntSub t1 t2 -> NatIntSub (mapTerms f t1) (mapTerms f t2)
+    -- NatIntMul t1 t2 -> NatIntMul (mapTerms f t1) (mapTerms f t2)
+    -- NatStringSlice t1 t2 t3 -> NatStringSlice (mapTerms f t1) (mapTerms f t2) (mapTerms f t3)
+    -- NatStringConcat t1 t2 -> NatStringConcat (mapTerms f t1) (mapTerms f t2)
 
 replaceIdxWith :: Int -> Term -> Term -> Term
 replaceIdxWith id replacement = mapTerms (\t -> case t of 

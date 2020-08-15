@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3b6a973ea9f0aa13ff4d343ac1fe86cc6369192813b241d17df833fcdbeffac0
+-- hash: 16a8e360d6b600c6929644e0c3c252b169a4481e9bdc643b8760235b6e663922
 
 name:           lambda-pi
 version:        0.1.0.0
@@ -27,6 +27,10 @@ source-repository head
 
 library
   exposed-modules:
+      Andromeda.Ctx
+      Andromeda.Infer
+      Andromeda.Main
+      Andromeda.Syntax
       LambdaPi.Env
       LambdaPi.Infer
       LambdaPi.Main
@@ -39,6 +43,7 @@ library
   build-depends:
       base >=4.7 && <5
     , containers
+    , extra
     , mtl
     , text
   default-language: Haskell2010
@@ -53,6 +58,7 @@ executable lambda-pi-exe
   build-depends:
       base >=4.7 && <5
     , containers
+    , extra
     , lambda-pi
     , mtl
     , text
@@ -70,6 +76,7 @@ test-suite lambda-pi-test
   build-depends:
       base >=4.7 && <5
     , containers
+    , extra
     , lambda-pi
     , mtl
     , neat-interpolation
