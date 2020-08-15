@@ -31,6 +31,8 @@ inferType expr =
             k2 <- inferUniverse t2
             pure $ Universe (max k1 k2)
 
+        Subst s e -> inferType $ subst s e
+
         Lam (var, t, e) -> do
             inferUniverse t 
             te <- extend var t Nothing $ inferType e

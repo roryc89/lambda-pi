@@ -24,6 +24,20 @@ newtype InferState =
 newInferState :: InferState
 newInferState = InferState { count = 0 }
 
+-- A context is represented as an associative list which maps a variable `x` to a pair
+--    `(t,e)` where `t` is its type and `e` is its value (optional).
+
+-- | The entries in the context are declarations of parameters or definitions.
+-- |     A parameter declaration carries its type, while a definition carries the type and
+-- |     the defining expression. 
+data Declaration 
+    = Parameter TypeExpr
+    | Definition TypeExpr Expr
+
+data Ctx = Ctx 
+    { names :: [Text]
+    , decls :: [Declaration]
+    }
 newtype Env = Env 
   { ctx :: Map.Map Variable (TypeExpr, Maybe Expr) 
   }
