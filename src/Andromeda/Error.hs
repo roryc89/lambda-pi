@@ -7,6 +7,7 @@ data TypeError
     | FunctionExpected Expr
     | TypeExpected Expr
     | UnknownVariable Variable
+    | UnknownIdx Int
     -- | PatternDoesNotFitType Expr Pattern
     | Errs TypeError TypeError
     deriving (Show, Eq, Ord)

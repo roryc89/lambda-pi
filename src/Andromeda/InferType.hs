@@ -38,18 +38,14 @@ data Ctx = Ctx
     { names :: [Text]
     , decls :: [Declaration]
     }
-newtype Env = Env 
-  { ctx :: Map.Map Variable (TypeExpr, Maybe Expr) 
-  }
-  deriving (Eq, Show)
 
-newEnv :: Env 
-newEnv = Env Map.empty 
+newCtx :: Ctx
+newCtx = Ctx [] []
 
 -- | Inference monad
 type Infer a = 
   ( ReaderT
-      Env             -- Typing environment
+      Ctx             -- Typing environment
       ( StateT         -- Inference state
           InferState
           (Except TypeError)
@@ -57,14 +53,14 @@ type Infer a =
       a
   )
 
-refresh :: Variable -> Infer Variable
-refresh v = do
-    s <- get
-    put s {count = count s + 1}
-    pure $ case v of 
-        StringVar x -> GeneratedVar x $ count s
-        GeneratedVar x _ -> GeneratedVar x $ count s
-        Dummy ->  GeneratedVar "_" $ count s
+-- refresh :: Variable -> Infer Variable
+-- refresh v = do
+--     s <- get
+--     put s {count = count s + 1}
+--     pure $ case v of 
+--         StringVar x -> GeneratedVar x $ count s
+--         GeneratedVar x _ -> GeneratedVar x $ count s
+--         Dummy ->  GeneratedVar "_" $ count s
 
 -- substitute :: [(Variable, Expr)] -> Expr -> Infer Expr
 -- substitute s e = case e of 

@@ -2,11 +2,7 @@ module Andromeda.Expr where
 
 import Data.Text (Text)
 
-data Variable 
-    = StringVar Text -- | User defined variable
-    | GeneratedVar Text Int -- | Generated variable 
-    | Dummy -- | Unused varible
-    deriving (Show, Eq, Ord)
+type Variable = Text
 
 data Expr 
     = Var Int -- | de Briujn index
@@ -34,7 +30,11 @@ data Substitution
     deriving (Show, Eq, Ord)
 
 -- Identity substituion
+idSubst :: Substitution
 idSubst = Shift 0
+
+shift :: Int -> Expr -> Expr
+shift k e = Subst (Shift k) e
 
 composeSub :: Substitution -> Substitution -> Substitution
 composeSub s t = 

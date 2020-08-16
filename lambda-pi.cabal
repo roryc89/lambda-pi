@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a3a1470761b85eb05545623948a865347fc34d7a9cd9bb68a1a33d1ceaafe6f5
+-- hash: 9bfd9d08549eab41c6ffcb9575ca3712cfbe3c6bd226385334dac987f1eb3075
 
 name:           lambda-pi
 version:        0.1.0.0
@@ -34,6 +34,7 @@ library
       Andromeda.Infer
       Andromeda.InferType
       Andromeda.Main
+      Andromeda.Normalise
       LambdaPi.Env
       LambdaPi.Infer
       LambdaPi.Main
@@ -48,6 +49,7 @@ library
     , containers
     , extra
     , mtl
+    , safe
     , text
   default-language: Haskell2010
 
@@ -64,6 +66,7 @@ executable lambda-pi-exe
     , extra
     , lambda-pi
     , mtl
+    , safe
     , text
   default-language: Haskell2010
 
@@ -84,6 +87,7 @@ test-suite lambda-pi-test
     , lambda-pi
     , mtl
     , neat-interpolation
+    , safe
     , tasty
     , tasty-hunit
     , tasty-rerun

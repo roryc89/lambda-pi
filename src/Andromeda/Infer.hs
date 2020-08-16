@@ -5,7 +5,7 @@ module Andromeda.Infer where
 import Andromeda.InferType
 import Andromeda.Expr
 import Andromeda.Error
-import Andromeda.Ctx (extend, lookupValue, lookupType)
+import Andromeda.Ctx (addParameter, addDefinition, lookupDefinition, lookupType)
 import Control.Monad.Except
 import Control.Monad.Extra ((&&^))
 import Control.Monad.State
@@ -14,7 +14,7 @@ import Control.Monad.Identity
 
 runInferType :: Expr -> Either TypeError Expr 
 runInferType expr = 
-    runExcept $ evalStateT (runReaderT go newEnv) newInferState
+    runExcept $ evalStateT (runReaderT go newCtx) newInferState
     where 
         go = inferType expr
 
@@ -28,21 +28,21 @@ inferType expr =
 
         Pi (x, t1, t2) -> do 
             k1 <- inferUniverse t1
-            k2 <- inferUniverse t2
+            k2 <- addParameter x t1 $ inferUniverse t2
             pure $ Universe (max k1 k2)
 
         Subst s e -> inferType $ subst s e
 
         Lam (var, t, e) -> do
             inferUniverse t 
-            te <- extend var t Nothing $ inferType e
+            te <- addParameter var e $ inferType e
             pure $ Pi (var, t, te)
 
         App e1 e2 -> do 
             (x, s, t) <- inferPi e1 
             te <- inferType e2
             checkEqual s te 
-            substitute [(x, e2)] t
+            pure $ Subst (Dot e2 idSubst) t
 
 
 inferUniverse :: Expr -> Infer Int 
@@ -96,7 +96,7 @@ equal e1 e2 = do
 normalize :: Expr -> Infer Expr 
 normalize expr = case expr of 
     Var v -> do 
-        valMay <- lookupValue v 
+        valMay <- lookupDefinition v 
         case valMay of 
             Nothing -> pure $ Var v 
             Just val -> normalize val 

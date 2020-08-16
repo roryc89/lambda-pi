@@ -1,5 +1,6 @@
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE RecordWildCards #-}
 module Andromeda.Ctx where 
 
 import Andromeda.Expr
@@ -10,26 +11,38 @@ import qualified Data.Map as Map
 import Data.Text (Text)
 import Control.Monad.Error.Class (throwError)
 import Control.Monad.Reader (ask, local)
-    
+import Safe (atMay)
+
+lookupType :: Int -> Infer TypeExpr
+lookupType k = do 
+    Ctx {decls} <- ask
+    case atMay decls k of 
+        Nothing -> throwError $ UnknownIdx k
+        Just (Definition t _) -> pure $ shift (k + 1) t
+        Just (Parameter t) -> pure $ shift (k + 1) t
 
 
-emptyCtx :: Ctx
-emptyCtx = Ctx [] []
+lookupDefinition :: Int -> Infer (Maybe Expr)
+lookupDefinition k = do 
+    Ctx {decls, names} <- ask
+    case atMay decls k of 
+        Nothing -> throwError $ UnknownIdx k
+        Just (Definition _ e) -> pure $ Just $ shift (k + 1) e
+        Just (Parameter _) -> pure Nothing
 
-lookupType :: Variable -> Infer Expr
-lookupType v = do 
-    Env {ctx} <- ask
-    case fst <$> Map.lookup v ctx of 
-        Nothing -> throwError $ UnknownVariable v
-        Just tipe -> pure tipe
+addParameter :: Text -> TypeExpr -> Infer a -> Infer a
+addParameter name tipe = 
+    local 
+        (\Ctx{..} -> 
+            Ctx (name : names) (Parameter tipe : decls)
+        )
 
-lookupValue :: Variable -> Infer (Maybe Expr)
-lookupValue v = do 
-    Env {ctx} <- ask
-    case snd <$> Map.lookup v ctx of 
-        Nothing -> throwError $ UnknownVariable v
-        Just val -> pure val 
+addDefinition :: Text -> TypeExpr -> Expr -> Infer a -> Infer a
+addDefinition name tipe expr = 
+    local 
+        (\Ctx{..} -> 
+            Ctx (name : names) (Definition tipe expr : decls)
+        )
 
-extend :: Variable -> TypeExpr -> Maybe Expr -> Infer a -> Infer a
-extend var tipe value = local 
-   (\(Env env) -> Env $ Map.insert var (tipe, value) env)
+
+
